@@ -46,6 +46,7 @@ router.post("/", async (req, res) => {
 router.get("/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+    const { skip } = req.query;
 
     // user가 존재하는지 체크
     const user = await client.user.findUnique({
@@ -62,6 +63,11 @@ router.get("/:userId", async (req, res) => {
       where: {
         userId: parseInt(userId),
       },
+      orderBy: {
+        createdAt: "desc", // 내림차순, asc:오름차순
+      },
+      skip: parseInt(skip),
+      take: 3,
     });
 
     res.json({ ok: true, todos });
@@ -80,13 +86,14 @@ router.put("/:id/done", async (req, res) => {
     // todo의 주인이 맞는지 확인
     const existTodo = await client.todo.findUnique({
       where: {
-        id: parseInt(id),
+        id: parseInt(id), // id 뿐만 아니라 모든 데이터 다 들고옴 -> 데이터의 크기가 크지않기 때문
       },
+      // 특정 데이터만 들고 오고 싶은 경우 select 사용
     });
     if (!existTodo) {
       return res.status(400).json({ ok: false, error: "Not exist todo." });
     }
-    if (!existTodo.userId !== parseInt(userId)) {
+    if (existTodo.userId !== parseInt(userId)) {
       return res
         .status(400)
         .json({ ok: false, error: "you are not todo owner" });
